@@ -1,14 +1,19 @@
 # Usa uma imagem leve do Python
 FROM python:3.11-slim
 
+# Impede o Python de gerar arquivos .pyc e permite logs em tempo real
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
 # Define a pasta onde o código vai morar dentro do container
 WORKDIR /app
 
-# Copia os arquivos do seu PC/GitHub para dentro do container
-COPY . /app
+# O ponto final significa: "copie para a pasta atual (WORKDIR)"
+COPY requirements.txt . 
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Instala as bibliotecas
-RUN pip install --no-cache-dir fastapi uvicorn pillow python-multipart jinja2
+# Copia o restante dos arquivos (main.py, templates, etc)
+COPY . .
 
 # Expõe a porta do FastAPI
 EXPOSE 8000
