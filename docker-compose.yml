@@ -8,8 +8,8 @@ services:
     volumes:
       - .:/app
     ports:
-      - "8082:8000" 
+      - "8082:8000"
     command: >
-      sh -c "pip install --no-cache-dir -r requirements.txt && 
+      sh -c "ls -la && pip install --no-cache-dir -r requirements.txt && 
              uvicorn main:app --host 0.0.0.0 --port 8000"
     restart: always
