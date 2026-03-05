@@ -1,12 +1,13 @@
 version: '3.8'
+
 services:
   zpl-converter:
     image: python:3.11-slim
     container_name: lynd-zpl-converter
-    working_dir: /app
     ports:
       - "8082:8000"
     command: >
-      sh -c "pip install --no-cache-dir -r requirements.txt && 
+      sh -c "find / -name requirements.txt && 
+             pip install fastapi uvicorn pillow python-multipart jinja2 && 
              uvicorn main:app --host 0.0.0.0 --port 8000"
     restart: always
