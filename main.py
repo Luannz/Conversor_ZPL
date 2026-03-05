@@ -23,12 +23,12 @@ async def convert_to_grf(file: UploadFile = File(...)):
         img = Image.open(io.BytesIO(contents))
         img = img.convert('1')
         
-        # 3. Em vez de passar os bytes para o GRF, salvamos a imagem 
-        # processada em um buffer e passamos os bytes desse buffer
+        # 3. salva a imagem 
+        # processada em um buffer e passa os bytes desse buffer
         img_byte_arr = io.BytesIO()
         img.save(img_byte_arr, format='PNG') # PNG é um formato seguro intermediário
         
-        # 4. Agora sim passamos os bytes corretos para a biblioteca ZPL
+        # 4. Agora passa os bytes corretos para a biblioteca ZPL
         grf = GRF.from_image(img_byte_arr.getvalue(), "UPLOAD")
         
         return {"zpl": grf.to_zpl()}
