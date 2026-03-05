@@ -1,15 +1,12 @@
 version: '3.8'
-
 services:
   zpl-converter:
     image: python:3.11-slim
     container_name: lynd-zpl-converter
     working_dir: /app
-    volumes:
-      - .:/app
     ports:
       - "8082:8000"
     command: >
-      sh -c "ls -la && pip install --no-cache-dir -r requirements.txt && 
+      sh -c "pip install --no-cache-dir -r requirements.txt && 
              uvicorn main:app --host 0.0.0.0 --port 8000"
     restart: always
