@@ -9,20 +9,18 @@
     <div class="container mt-5">
         <div class="card shadow">
             <div class="card-header bg-dark text-white">
-                <h3 class="mb-0">Conversor de Imagem para ZPL</h3>
+                <h3 class="mb-0">Conversor de Imagem para ZPL Hex</h3>
             </div>
-            <div class="card-body">
-                <p>Selecione uma logo ou ícone para converter em código de impressora Zebra.</p>
+            <div class="card-body text-center">
+                <p>Selecione uma imagem (PCX, PNG, JPG) para gerar o arquivo <strong>.GRF</strong></p>
                 
-                <div class="mb-3">
+                <div class="mb-4">
                     <input class="form-control" type="file" id="imageInput" accept="image/*,.pcx">
                 </div>
-                <button onclick="converter()" class="btn btn-primary">Converter para ZPL</button>
-
-                <hr>
-                <h5>Resultado:</h5>
-                <textarea id="resultado" class="form-control" rows="10" readonly placeholder="O código ZPL aparecerá aqui..."></textarea>
-                <button onclick="copiar()" class="btn btn-sm btn-secondary mt-2">Copiar Código</button>
+                
+                <button onclick="converter()" id="btnConverter" class="btn btn-primary btn-lg">
+                    Converter e Baixar .GRF
+                </button>
             </div>
         </div>
     </div>
@@ -30,7 +28,7 @@
     <script>
         async function converter() {
             const fileInput = document.getElementById('imageInput');
-            const btn = document.querySelector('button');
+            const btn = document.getElementById('btnConverter');
             
             if (fileInput.files.length === 0) {
                 alert("Por favor, selecione uma imagem!");
@@ -40,25 +38,47 @@
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
 
-            btn.innerText = "Convertendo...";
+            btn.innerText = "Processando...";
+            btn.disabled = true;
             
             try {
-                const response = await fetch('/convert', { method: 'POST', body: formData });
-                const data = await response.json();
-                document.getElementById('resultado').value = data.zpl;
-            } catch (error) {
-                alert("Erro ao converter imagem.");
-            } finally {
-                btn.innerText = "Converter para ZPL";
-            }
-        }
+                const response = await fetch('/convert', { 
+                    method: 'POST', 
+                    body: formData 
+                });
 
-        function copiar() {
-            const area = document.getElementById('resultado');
-            area.select();
-            document.execCommand('copy');
-            alert("Copiado para a área de transferência!");
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || "Erro na conversão");
+                }
+
+                // 1. Recebe a resposta como um BLOB (Binary Large Object)
+                const blob = await response.blob();
+                
+                // 2. Cria um link temporário na memória do navegador
+                const url = window.URL.createObjectURL(blob);
+                
+                // 3. Simula um clique para baixar o arquivo
+                const a = document.createElement('a');
+                a.href = url;
+                // Define o nome do arquivo baixado (mesmo nome original + .grf)
+                const nomeOriginal = fileInput.files[0].name.split('.')[0];
+                a.download = nomeOriginal + ".grf";
+                
+                document.body.appendChild(a);
+                a.click();
+                
+                // 4. Limpa a memória
+                window.URL.revokeObjectURL(url);
+                a.remove();
+
+            } catch (error) {
+                console.error(error);
+                alert("Erro: " + error.message);
+            } finally {
+                btn.innerText = "Converter e Baixar .GRF";
+                btn.disabled = false;
+            }
         }
     </script>
 </body>
-</html>

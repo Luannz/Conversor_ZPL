@@ -1,8 +1,7 @@
 from fastapi import FastAPI, UploadFile, File, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
-from PIL import Image
-from zplgrf import GRF
+from PIL import Image, ImageOps
 import io
 
 app = FastAPI()
@@ -15,23 +14,39 @@ async def home(request: Request):
 @app.post("/convert")
 async def convert_to_grf(file: UploadFile = File(...)):
     try:
-        # 1. Lê os bytes do arquivo enviado
         contents = await file.read()
-        
-        # 2. Abre com Pillow para converter para preto e branco (1-bit)
-        # Isso garante que formatos como PCX sejam processados corretamente
         img = Image.open(io.BytesIO(contents))
+        
+        # Inversão de cores para bater com seu exemplo (fundo 0000)
+        img = img.convert('L')
+        img = ImageOps.invert(img)
         img = img.convert('1')
         
-        # 3. salva a imagem 
-        # processada em um buffer e passa os bytes desse buffer
-        img_byte_arr = io.BytesIO()
-        img.save(img_byte_arr, format='PNG') # PNG é um formato seguro intermediário
+        width, height = img.size
+        bytes_per_row = (width + 7) // 8
+        total_bytes = bytes_per_row * height
         
-        # 4. Agora passa os bytes corretos para a biblioteca ZPL
-        grf = GRF.from_image(img_byte_arr.getvalue(), "UPLOAD")
+        image_bytes = img.tobytes()
+        hex_data = image_bytes.hex().upper()
         
-        return {"zpl": grf.to_zpl()}
+        hex_formatted = ""
+        for i in range(0, len(hex_data), 64):
+            hex_formatted += hex_data[i:i+64] + "\n"
+        
+        # Pegamo o nome do arquivo enviado 
+        nome_arquivo_limpo = file.filename.split('.')[0].upper()
+        cabecalho = f"~DG{nome_arquivo_limpo},{total_bytes:05d},{bytes_per_row:03d},"
+
+        conteudo_final = cabecalho + "\n" + hex_formatted
+        
+        file_output = io.BytesIO(conteudo_final.encode('utf-8'))
+        nome_download = f"{nome_arquivo_limpo}.grf"
+        
+        return StreamingResponse(
+            file_output,
+            media_type="application/octet-stream",
+            headers={"Content-Disposition": f"attachment; filename={nome_download}"}
+        )
     
     except Exception as e:
         return {"error": f"Erro ao processar: {str(e)}"}
